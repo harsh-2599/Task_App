@@ -64,7 +64,12 @@ router.patch('/tasks/:id',async(req,res)=>{
         return res.status(400).send("Cant update this/these key/keys")
     }
     try {
-        const task = await taskModel.findByIdAndUpdate(id,req.body,{new: true, runValidators: true})
+        const task = await taskModel.findById(id)
+        updates.forEach((update)=> task[update]=req.body[update])
+        await task.save()
+
+        // const task = await taskModel.findByIdAndUpdate(id,req.body,{new: true, runValidators: true})
+        
         if(!task){
             return res.status(404).send("Task not found")
         }

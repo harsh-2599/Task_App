@@ -1,5 +1,7 @@
 const express = require('express')
+const { ReplSet } = require('mongodb')
 // require('./db/mongoose')
+const auth = require('../middleware/auth')
 const userModel = require('../models/user')
 
 const router = new express.Router()
@@ -9,8 +11,9 @@ router.post('/users',async (req,res)=>{
 
     //Using async await
     try {
-        await user.save()
-        res.status(201).send(user + '\n User added')
+        // await user.save()
+        const token = await user.generateAuthToken()
+        res.status(201).send({user, token})
     } catch (e) {
         res.status(400).send("Error occured\n" + e)
     }
@@ -23,14 +26,40 @@ router.post('/users',async (req,res)=>{
     // })
 })
 
-router.get('/users',async (req,res)=>{
-
+router.post('/users/login',async (req,res)=>{
     try {
-        const users =  await userModel.find({})
-        res.status(200).send(users +"\n Displayed user")
+        const user = await userModel.findByCredentials(req.body.email,req.body.password)
+        const token = await user.generateAuthToken()
+        res.status(200).send({user,token})
     } catch (e) {
-        res.status(500).send('Error Occured\n' + e)
+        res.status(500).send({error:e.message})
     }
+})
+
+router.post('/users/logout', auth, async (req,res)=>{
+    try {
+        req.user.tokens = req.user.tokens.filter((token)=>{
+            return token.token != req.token
+        })
+        await req.user.save()
+        res.status(200).send("Logout successful")
+    } catch (e) {
+        res.status(500).send({Error : e.message})
+    }
+})
+
+router.post('/users/logoutall',auth, async (req,res)=>{
+    try {
+        req.user.tokens = []
+        await req.user.save();
+        res.status(200).send("Logged out of all accounts")
+    } catch (e) {
+        res.status(500).send({Error : e.message})
+    }
+})
+
+router.get('/users/me',auth,async (req,res)=>{
+    res.send(req.user)
     // userModel.find({}).then((users)=>{
     //     res.status(200).send(users+'\n Users Displayed ')
     // }).catch((e)=>{
@@ -69,7 +98,12 @@ router.patch('/users/:id',async(req,res)=>{
         return res.status(400).send("Cant update this/these key/keys")
     }
     try {
-        const user = await userModel.findByIdAndUpdate(id,req.body,{new: true, runValidators: true})
+        const user = await userModel.findById(id)
+        updates.forEach((update)=> user[update]= req.body[update])
+        await user.save()
+
+        // const user = await userModel.findByIdAndUpdate(id,req.body,{new: true, runValidators: true})
+        
         if(!user){
             return res.status(404).send("User not found")
         }
