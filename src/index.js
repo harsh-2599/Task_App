@@ -8,6 +8,7 @@ const taskRouter = require('./router/task')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
+
 const app = express()
 const port = process.env.PORT || 3000
 
@@ -17,6 +18,6 @@ app.use(taskRouter)
 
 app.listen(port,()=>{
     console.log("Server is started on port "+ port);
+    
 })
-
 

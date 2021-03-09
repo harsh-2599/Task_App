@@ -6,6 +6,7 @@ const userModel = require('../models/user')
 const multer = require('multer')
 const { Error } = require('mongoose')
 const sharp = require('sharp')
+const sendEmail = require("./../utils/sendEmail");
 
 const router = new express.Router()
 
@@ -16,6 +17,7 @@ router.post('/users',async (req,res)=>{
     try {
         // await user.save()
         const token = await user.generateAuthToken()
+        sendEmail(req.body.email,`<b><i> Welcome ${req.body.name}</i></b>`);
         res.status(201).send({user, token})
     } catch (e) {
         res.status(400).send("Error occured\n" + e)
@@ -90,7 +92,8 @@ router.patch('/users/me',auth,async(req,res)=>{
 
 router.delete('/users/me', auth ,async (req,res)=>{
     try {
-        await req.user.remove()
+        sendEmail(req.user.email,`<b><i> Thank You. Goodbye ${req.user.name}</i></b>`);
+        await req.user.remove();
         res.status(200).send( req.user)
     } catch (e) {
         res.status(500).send("Error occured\n"+ e)
