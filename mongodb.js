@@ -1,9 +1,9 @@
 const mongodb = require('mongodb')
-const imp = require('../Task-app/imp.js')
+// const imp = require('../Task-app/imp.js')
 const mongoClient = mongodb.MongoClient
 const ObjectID = mongodb.ObjectID
 
-const curl = imp
+const curl = process.env.CURL;
 // const curl = 'mongodb://127.0.0.1:27017'
 const databaseName = 'Task_Application'
 

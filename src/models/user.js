@@ -3,6 +3,9 @@ const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const taskModel = require('./task')
+require("dotenv").config()
+
+const jwtkey = process.env.JWTKEY;
 
 const userSchema = new mongoose.Schema({
     name : {
@@ -76,7 +79,7 @@ userSchema.virtual('tasks',{
 userSchema.methods.generateAuthToken = async function(){
     // console.log("Ib function")
     const user = this
-    const token = jwt.sign({_id : user._id.toString()},'thisisharshreddiar')
+    const token = jwt.sign({_id : user._id.toString()},jwtkey)
     // console.log(token);
     user.tokens = user.tokens.concat({token})
     // console.log(user.tokens);

@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer')
-const {mail,password} = require('./../../imp');
+require("dotenv").config()
+
+const mail = process.env.MAIL;
+const password = process.env.PASSWORD;
 
 const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -15,7 +18,7 @@ const sendEmail = async (destEmail,text) => {
     await transporter.sendMail({
         from: mail, // sender address
         to: destEmail, // list of receivers
-        subject: "Hello from nodemailer", // Subject line
+        subject: "Hello from Task manager Application", // Subject line
         html: `${text}`, // html body
     });
 } 

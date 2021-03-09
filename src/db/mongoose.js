@@ -1,7 +1,11 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
+require("dotenv").config()
 
-mongoose.connect('mongodb://127.0.0.1:27017/task-manager-api',{
+
+const url = process.env.CURL;
+
+mongoose.connect(url,{
     useNewUrlParser:true,
     useCreateIndex : true,
     useUnifiedTopology : true,
