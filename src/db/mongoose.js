@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 require("dotenv").config()
 
-
+// CURL is obtained from env file... CURL contains the db link 
 const url = process.env.CURL;
 
 mongoose.connect(url,{

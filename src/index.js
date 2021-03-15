@@ -1,23 +1,17 @@
 const express = require('express')
 require('./db/mongoose')
-const userModel = require('./models/user')
-const taskModel = require('./models/task')
-const { findByIdAndUpdate } = require('./models/user')
 const userRouter = require('./router/user')
 const taskRouter = require('./router/task')
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 
+const app = express() //Starting an application
+const port = process.env.PORT || 3000 // Port is assigned... Default 3000 is considered
 
-const app = express()
-const port = process.env.PORT || 3000
+app.use(express.json()) // The incoming request is recognized as json object
+app.use(userRouter) // userRouter is used in app
+app.use(taskRouter) // taskRouter is used in app
 
-app.use(express.json())
-app.use(userRouter)
-app.use(taskRouter)
-
+// App is connected to specified port
 app.listen(port,()=>{
     console.log("Server is started on port "+ port);
     
 })
-

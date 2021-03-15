@@ -8,41 +8,38 @@ const { Error } = require('mongoose')
 const sharp = require('sharp')
 const sendEmail = require("./../utils/sendEmail");
 
-const router = new express.Router()
+const router = new express.Router() // For routes
 
+// Route for creating new users
 router.post('/users',async (req,res)=>{
     const user = new userModel(req.body)
-
     //Using async await
     try {
         // await user.save()
-        const token = await user.generateAuthToken()
-        sendEmail(req.body.email,`<b><i> Welcome ${req.body.name}</i></b>`);
-        res.status(201).send({user, token})
+        const token = await user.generateAuthToken() // Generating token for users
+        sendEmail(req.body.email,`<b><i> Welcome ${req.body.name}</i></b>`); // Sending welcome mail
+        res.status(201).send({user, token}) // Returns user data and token
     } catch (e) {
         res.status(400).send("Error occured\n" + e)
     }
-
-    //using then catch
-    // user.save().then(()=>{
-    //     res.status(200).send(user + "\n User added")
-    // }).catch((e)=>{
-    //     res.status(400).send("Error occured\n" + e)
-    // })
 })
 
+// Route for login of users
 router.post('/users/login',async (req,res)=>{
     try {
-        const user = await userModel.findByCredentials(req.body.email,req.body.password)
-        const token = await user.generateAuthToken()
-        res.status(200).send({user,token})
+        const user = await userModel.findByCredentials(req.body.email,req.body.password) // Matching email and password provided with the db
+        const token = await user.generateAuthToken() // Generating token when user login 
+        res.status(200).send({user,token}) // Returns user data and token
     } catch (e) {
         res.status(500).send({error:e.message})
     }
 })
 
+// Route for logging out of users
+// Middleware is provided which ensures that the authenticated user wants to perform logout
 router.post('/users/logout', auth, async (req,res)=>{
     try {
+        // The token except the one in use are stored and the remaining is discarded.
         req.user.tokens = req.user.tokens.filter((token)=>{
             return token.token != req.token
         })
@@ -53,9 +50,11 @@ router.post('/users/logout', auth, async (req,res)=>{
     }
 })
 
+// Route for logging out of users from everywhere
+// Middleware is provided which ensures that the authenticated user wants to perform logout
 router.post('/users/logoutall',auth, async (req,res)=>{
     try {
-        req.user.tokens = []
+        req.user.tokens = [] // tokens array is assigned as empty
         await req.user.save();
         res.status(200).send("Logged out of all accounts")
     } catch (e) {
@@ -63,25 +62,24 @@ router.post('/users/logoutall',auth, async (req,res)=>{
     }
 })
 
+// Route for displaying profile for user
+// Middleware is used here to know which user is trying to display his own profile
 router.get('/users/me',auth,async (req,res)=>{
     res.send(req.user)
-    // userModel.find({}).then((users)=>{
-    //     res.status(200).send(users+'\n Users Displayed ')
-    // }).catch((e)=>{
-    //     res.status(500).send('Error Occured\n' + e)
-    // })
 })
 
+// Route for updating profile for user
+// Middleware is used to find whether the authenticated user is trying to update the profile
 router.patch('/users/me',auth,async(req,res)=>{
-    const updates = Object.keys(req.body)
+    const updates = Object.keys(req.body) // Gets keys form the object passed in request
     const allowedUpdates = ['name','email','age','password']
-    const isValid = updates.every((update)=> allowedUpdates.includes(update))
+    // Checks whether the update is allowable or not
+    const isValid = updates.every((update)=> allowedUpdates.includes(update)) 
 
     if(!isValid){
         return res.status(400).send("Cant update this/these key/keys")
     }
     try {
-        // const user = await userModel.findById(id)
         updates.forEach((update)=> req.user[update]= req.body[update])
         await req.user.save()
         res.status(200).send(req.user)
@@ -90,9 +88,11 @@ router.patch('/users/me',auth,async(req,res)=>{
     }
 })
 
+// Route for deleting user account
+// Middleware is used to authenticate the user who wants to delete account 
 router.delete('/users/me', auth ,async (req,res)=>{
     try {
-        sendEmail(req.user.email,`<b><i> Thank You. Goodbye ${req.user.name}</i></b>`);
+        sendEmail(req.user.email,`<b><i> Thank You. Goodbye ${req.user.name}</i></b>`); // Sending goodbye mail
         await req.user.remove();
         res.status(200).send( req.user)
     } catch (e) {
@@ -100,19 +100,23 @@ router.delete('/users/me', auth ,async (req,res)=>{
     }
 })
 
+// For image upload as profile photo. Multer library is used
 const upload = multer({
     limits:{
-        fileSize : 2500000
+        fileSize : 2500000 // File size is limited to 2.5MB
     },
     fileFilter(req,file,cb){
-        if(!file.originalname.match(/\.(jpg|jpeg|png)/)){
+        if(!file.originalname.match(/\.(jpg|jpeg|png)/)){ // Supported extensions
             return cb(new Error('Please upload an image'))
         }
         cb(undefined, true)
     }
 })
 
-router.post('/users/me/avatar' , auth , upload.single('avatar') , async (req,res)=>{
+// Upload a avatar for an account
+// Middleware is used for authenticating the user
+router.post('/users/avatar/upload' , auth , upload.single('avatar') , async (req,res)=>{
+    // Using sharp library fetching the image in buffer, resizing it and changing extension
     const buffer = await sharp(req.file.buffer).resize({width : 250, height : 250}).png().toBuffer()
     req.user.avatar = buffer
     await req.user.save()
@@ -121,21 +125,23 @@ router.post('/users/me/avatar' , auth , upload.single('avatar') , async (req,res
     res.status(400).send({error : error.message})
 })
 
-router.get('/users/:id/avatar', async(req,res)=>{
+// For displaying avatar of user
+router.get('/users/avatar/display',auth, async(req,res)=>{
     try {
-        const id = req.params.id
+        const id = req.user._id
         const user = await userModel.findById(id)
 
         if(!user || !user.avatar){
             throw new Error('Not found for this ID')
         }
-        res.set('Content-type','image/png')
+        res.set('Content-type','image/png') // Setting content type of response to image/png
         res.send(user.avatar)
     } catch (e) {
         res.status(400).send(e)
     }
 })
 
+// For deleting avatar of user 
 router.delete('/users/me/avatar', auth , async (req,res)=>{
     req.user.avatar = undefined
     await req.user.save()
